@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    restart: always  # 容器重启策略：总是重启
+    ports:
+      - "9000:9000"  # API 端口映射
+      - "9001:9001"  # 控制台端口映射
+    environment:
+      MINIO_ROOT_USER: admin            # 设置管理员账号（建议修改）
+      MINIO_ROOT_PASSWORD: admin123456  # 设置管理员密码（必须至少8位）
+    volumes:
+      - ./data:/data                    # 数据目录挂载
+      - ./config:/root/.minio           # 配置文件挂载
+    command: server /data --console-address ":9001" # 启动命令
+    healthcheck:                        # 健康检查
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+

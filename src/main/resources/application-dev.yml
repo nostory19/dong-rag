@@ -1,0 +1,92 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    # postgresql 数据库配置
+    url: jdbc:postgresql://localhost:5432/dong_rag
+    username: postgres
+    password: 12345
+  # 数据库迁移
+  flyway:
+    enabled: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 5s
+  ai:
+    openai:
+      api-key: ${BAILIAN_API_KEY}
+    # 使用alibaba ai模型
+    model:
+      chat: dashscope
+      embedding: dashscope
+    dashscope:
+      api-key: ${BAILIAN_API_KEY}
+      chat:
+        options:
+          model: qwen-plus
+      embedding:
+        options:
+          model: text-embedding-v3
+    vectorstore:
+      pgvector:
+        # 向量索引类型
+        index-type: HNSW
+        # 距离度量，余弦值
+        distance-type: COSINE_DISTANCE
+        # 向量维度
+        dimensions: 1024
+        # 批量处理大小
+        max-document-batch-size: 9
+        # 启动时是否自动创建表
+        initialize-schema: true
+        # 创建表名
+        table-name: vector_store
+  elasticsearch:
+    # 连接地址
+    uris: http://82.156.14.62:9200
+    # 连接超时时间
+    connection-timeout: 5s
+    # 读取超时时间
+    socket-timeout: 30s
+
+# minio 配置
+storage:
+  minio:
+    endpoint: http://82.156.14.62:9000
+    access-key: admin
+    secret-key: admin123456
+    bucket-name: dong-rag-documents
+
+ingestion:
+  chunking:
+    target-tokens: 240
+    max-tokens: 320
+    overlap-tokens: 32
+  vector:
+    # 控制业务侧每次调用 VectorStore.add 的 chunk 数量，降低单次 Ollama embedding 请求压力。
+    add-batch-size: 9
+
+# sa-token 配置
+sa-token:
+  token-name: Authorization
+  timeout: 2592000
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-read-cookie: false
+  is-read-header: true
+  is-log: true
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+    version: OPENAPI_3_0
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
