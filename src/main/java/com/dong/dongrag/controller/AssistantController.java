@@ -8,6 +8,7 @@ import com.dong.dongrag.assistant.service.ComplaintEvaluationService;
 import com.dong.dongrag.model.dto.assistant.AssistantChatRequest;
 import com.dong.dongrag.service.AssistantService;
 import jakarta.annotation.Resource;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,7 +29,7 @@ public class AssistantController {
     @Resource
     private ComplaintEvaluationService complaintEvaluationService;
 
-    @PostMapping("/chat")
+    @PostMapping(value = "/chat", produces = MediaType.APPLICATION_NDJSON_VALUE)
     public Flux<String> chat(@RequestBody AssistantChatRequest request) {
         return assistantService.chat(request);
     }

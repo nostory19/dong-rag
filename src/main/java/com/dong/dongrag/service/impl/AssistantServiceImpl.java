@@ -16,6 +16,8 @@ import com.dong.dongrag.service.AuthContextService;
 import com.dong.dongrag.service.GroupService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -26,6 +28,8 @@ import java.util.UUID;
 
 @Service
 public class AssistantServiceImpl implements AssistantService {
+
+    private static final Logger log = LoggerFactory.getLogger(AssistantServiceImpl.class);
 
     @Resource
     private AuthContextService authContextService;
@@ -52,6 +56,8 @@ public class AssistantServiceImpl implements AssistantService {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数不能为空");
         }
         groupService.checkGroupReadable(userId, request.getGroupId());
+        log.info("Assistant chat request accepted, userId={}, groupId={}, topK={}, messageLength={}",
+                userId, request.getGroupId(), request.getTopK(), request.getMessage() == null ? 0 : request.getMessage().length());
         return Flux.create(sink -> {
             toolCallTraceContext.start(log -> sendEvent(sink, "tool-log", log));
             sendEvent(sink, "start", "assistant stream started");
@@ -65,6 +71,7 @@ public class AssistantServiceImpl implements AssistantService {
         try {
             int topK = request.getTopK() == null ? 5 : request.getTopK();
             String conversationId = UUID.randomUUID().toString();
+            log.info("Assistant process started, groupId={}, conversationId={}", request.getGroupId(), conversationId);
             ComplaintProcessResult result = complaintOrchestratorService.process(
                     request.getMessage(), request.getGroupId(), topK, conversationId,
                     new ComplaintOrchestratorService.OrchestratorEventListener() {
@@ -98,9 +105,12 @@ public class AssistantServiceImpl implements AssistantService {
             sendEvent(sink, "actions", toJson(response.getActions()));
             List<String> logs = toolCallTraceContext.snapshot();
             sendEvent(sink, "tool-log-summary", "tool call logs size=" + logs.size());
+            log.info("Assistant process completed, groupId={}, conversationId={}, toolLogCount={}",
+                    request.getGroupId(), conversationId, logs.size());
             finishWithDone(sink, "ok");
         } catch (Exception e) {
             sendEvent(sink, "error", e.getMessage());
+            log.error("Assistant process failed, groupId={}, error={}", request.getGroupId(), e.getMessage(), e);
             finishWithDone(sink, "error");
         } finally {
             toolCallTraceContext.clear();
@@ -113,8 +123,19 @@ public class AssistantServiceImpl implements AssistantService {
         }
         int step = 24;
         for (int i = 0; i < text.length(); i += step) {
+            if (sink.isCancelled()) {
+                return;
+            }
             int end = Math.min(text.length(), i + step);
             sendEvent(sink, "token", text.substring(i, end));
+            // Pace the stream slightly to improve perceived "streaming" and avoid UI jank
+            // when the frontend renders on every chunk.
+            try {
+                Thread.sleep(12);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
     }
 
@@ -126,15 +147,16 @@ public class AssistantServiceImpl implements AssistantService {
         }
     }
 
-    private void sendEvent(FluxSink<String> sink, String event, String data) {
+    private void sendEvent(FluxSink<String> sink, String event, Object data) {
         if (sink.isCancelled()) {
             return;
         }
-        String payload = toJson(Map.of(
+        Map<String, Object> payload = Map.of(
                 "event", event,
                 "data", data == null ? "" : data
-        ));
-        sink.next(payload);
+        );
+        // Newline-delimited JSON (NDJSON) for robust streaming parsing in frontend.
+        sink.next(toJson(payload) + "\n");
     }
 
     private void finishWithDone(FluxSink<String> sink, String status) {

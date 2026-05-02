@@ -40,11 +40,24 @@ export type IngestionJobVO = {
   lastError?: string;
 };
 
+export type IngestionMetricsVO = {
+  totalJobs: number;
+  successJobs: number;
+  failedJobs: number;
+  failureRate: number;
+  avgDurationSeconds: number;
+  successRateByFileType?: Record<string, number>;
+  retryCountDistribution?: Record<string, number>;
+};
+
 export const ragIngestionApi = {
   listJobs(limit = 50) {
     return request<IngestionJobVO[]>({ method: 'GET', url: '/rag/ingest/jobs', params: { limit } });
   },
   getJob(jobId: number) {
     return request<IngestionJobVO>({ method: 'GET', url: `/rag/ingest/jobs/${jobId}` });
+  },
+  metrics() {
+    return request<IngestionMetricsVO>({ method: 'GET', url: '/rag/ingest/metrics' });
   },
 };
