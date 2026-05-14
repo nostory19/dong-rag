@@ -27,5 +27,13 @@
 
 若 ES 集群版本与 `elasticsearch-java` 客户端不兼容，**健康检查**解析 `_cluster/health` 可能失败。可在 `management.health.elasticsearch.enabled: false` 临时关闭（见 [10-observability-resilience-and-config.md](10-observability-resilience-and-config.md)）。
 
+## 实现思路与技术要点
+
+- **MinIO 存原文**：对象存储适合大文件与二进制；DB 仅存元数据与路径，减轻 PostgreSQL 体积与备份压力；下载流式解析控制内存峰值。
+- **PgVector 与 Spring AI**：使用官方 starter 统一向量 CRUD；表名与维度由配置驱动，迁移 `v5` 处理维度变更时的「破坏性对齐」决策（宁可重建向量也不静默截断）。
+- **metadata 设计**：`groupId`、`documentId`、`chunkIndex` 为检索过滤与去重最小集；附加标题、版本指纹等支撑产品功能而不过度依赖 JOIN。
+- **Elasticsearch 与混合检索**：`RagChunkIndex` 映射与 IK 分词在集群侧安装；查询层用 `ElasticsearchOperations` 组装 NativeQuery，与向量路解耦，便于单独调优。
+- **与入库一致性**：同一 chunk 序写入 DB、`vector_store`、`rag_chunk_index`；检索层只读索引，不在查询时修复写入不一致（由入库验收发现）。
+
 上一篇：[08-assistant-session-dialogue.md](08-assistant-session-dialogue.md)  
 下一篇：[10-observability-resilience-and-config.md](10-observability-resilience-and-config.md)

@@ -10,6 +10,7 @@
 
 | 步骤 | 主题 | 文档 |
 |:----:|------|------|
+| 0 | 代码规范与工程约定 | [docs/00-coding-standards.md](docs/00-coding-standards.md) |
 | 1 | 项目定位、能力边界、与前后端关系 | [docs/01-project-overview.md](docs/01-project-overview.md) |
 | 2 | 技术栈、后端包结构、关键类索引 | [docs/02-tech-stack-and-structure.md](docs/02-tech-stack-and-structure.md) |
 | 3 | Sa-Token 认证、角色、接口保护 | [docs/03-authentication-and-authorization.md](docs/03-authentication-and-authorization.md) |
@@ -175,4 +176,4 @@ cd admin-frontend && npm install && npm run dev
 
 ---
 
-**再次提示**：若需「按模块讲清楚实现方式」，请以 **[docs/README.md](docs/README.md)** 为目录逐篇阅读，避免与根 README 重复维护两处长文。
+**再次提示**：若需「按模块讲清楚实现方式」，请以 **[docs/README.md](docs/README.md)** 为目录逐篇阅读；各专题文末 **「实现思路与技术要点」** 说明设计动机与关键代码路径，工程约定见 **[docs/00-coding-standards.md](docs/00-coding-standards.md)**。避免与根 README 重复维护两处长文。

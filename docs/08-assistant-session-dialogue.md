@@ -41,5 +41,15 @@
 
 `AssistantServiceImpl` 对整轮多专家处理打点：`dongrag.assistant.multi_agent` Timer。
 
+## 实现思路与技术要点
+
+- **会话表与消息表分离**：`assistant_conversations` 存滚动摘要、槽位、状态；`assistant_messages` 存多轮轨迹，便于按轮回放与压缩，避免单表 JSON 无限膨胀。
+- **`conversationId` 可选**：首次由服务端生成并在 `start` 事件返回，前端持久化后后续轮次携带；服务端校验 `user_id` + `group_id`，防止会话劫持。
+- **意图路由**：规则优先保证低延迟与可解释；在规则置信不足时再走短 LLM 分类（可配置关闭），平衡成本与准确率。
+- **投诉槽位**：正则 + 合并工具从自然语言抽取结构化槽位，`GuidanceServiceImpl` 在缺槽时发 `guide` 事件，驱动前端多轮补全后再编排。
+- **ContextBuilder 滑窗**：限制条数与总字符，防止 Planner/聚合阶段被历史淹没；Worker 仍用**本轮用户原文**做检索，避免历史噪声污染 embedding 查询。
+- **异步压缩**：超阈值后用虚拟线程异步摘要写回 `rolling_summary`，不阻塞本轮响应；与 `last_compressed_at` 配合可观测压缩频率。
+- **JSONB 与 MyBatis**：复杂 metadata 走 jsonb + `JsonbTypeHandler`，避免手写字符串拼接 SQL。
+
 上一篇：[07-knowledge-assistant-multi-agent.md](07-knowledge-assistant-multi-agent.md)  
 下一篇：[09-storage-vectors-and-elasticsearch.md](09-storage-vectors-and-elasticsearch.md)

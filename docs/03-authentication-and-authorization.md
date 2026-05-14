@@ -28,5 +28,13 @@
 
 助手接口在登录后根据 `userId` + `groupId` 创建或绑定 `assistant_conversations`，防止 `conversationId` 被其他用户冒用。
 
+## 实现思路与技术要点
+
+- **为何选 Sa-Token + Redis**：无状态 JWT 外还需服务端会话撤销、多端策略时，集中式 Token 存储更简单；与 Spring Boot 3 starter 集成成本低。
+- **Header 携带 Token**：`is-read-header: true` 统一从 `Authorization` 读取，避免 Cookie 跨域与 CSRF 组合复杂度；前后端约定见用户端/管理端文档。
+- **分层鉴权**：类或方法上 `@SaCheckLogin` / `@SaCheckRole("admin")` 做**粗粒度门禁**；涉及 `groupId` 的资源仍要在 Service 内 **`checkGroupReadable` / `checkGroupWritable`**，防止「已登录但越权访问他组」。
+- **扩展点**：`SaTokenPermissionImpl` 预留细粒度权限；若未来引入「组管理员」角色，可在此与注解组合使用。
+- **与助手会话绑定**：登录态只证明「你是谁」，会话表校验证明「这条会话属于你且在该组」，两条线缺一不可。
+
 上一篇：[02-tech-stack-and-structure.md](02-tech-stack-and-structure.md)  
 下一篇：[04-group-and-data-isolation.md](04-group-and-data-isolation.md)

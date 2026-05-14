@@ -31,3 +31,14 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 本地评测跑批产出 ###
+eval/results/*.json
+eval/results/resume-snippet*.txt
+
+### 本地临时草稿（SQL、说明等，见 docs/00-coding-standards.md） ###
+临时/
+
+### Python 缓存 ###
+__pycache__/
+*.py[cod]

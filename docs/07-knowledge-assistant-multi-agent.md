@@ -49,5 +49,15 @@
 
 `ComplaintOrchestratorService`：评测或兼容路径下可能直接以投诉模板调用编排（与主助手流共享 `MultiAgentOrchestratorService` 能力）。
 
+## 实现思路与技术要点
+
+- **NDJSON 流式**：助手链路长、含多事件；逐行 JSON 比 SSE 自定义更少依赖，前端 `fetch` + 流即可消费；`event` 字段稳定协议便于扩展。
+- **模板归一**：`INTERNAL_KB_SIMPLE` 合并到 `INTERNAL_KB_MULTI`，减少前端/配置分叉，统一走多专家路径；投诉模板显式保留以加载不同 Planner 约束与话术。
+- **Planner → sanitize → 并行 Worker**：Planner 产出结构化子任务；`sanitize` 限制数量与 `assignedAgent` 白名单，防止模型胡列 agent 名导致运行时异常；并行缩短_wall clock_。
+- **KbToolDomainWorker 模式**：每个领域 Worker 绑定 `ChatClient` + `KnowledgeBaseSearchTool`，强制通过 `@Tool` 检索，便于日志与策略层审计「用过哪些证据」。
+- **上下文注入**：`groupId`、`topK`、`conversationId`、`traceId` 写入模型侧提示，降低越权与串组风险；与 [08](08-assistant-session-dialogue.md) 的会话、意图信息组合使用。
+- **Policy 层**：`TemplateAwareAgentOutputPolicy` 在汇总后做模板相关约束（如投诉高危话术），与纯模型生成解耦。
+- **编排评测**：`ComplaintEvaluationService` 用固定样例集统计子任务数、转人工率等，用于回归对比 Prompt/Planner 变更。
+
 上一篇：[06-hybrid-retrieval-and-rag-qa.md](06-hybrid-retrieval-and-rag-qa.md)  
 下一篇：[08-assistant-session-dialogue.md](08-assistant-session-dialogue.md)

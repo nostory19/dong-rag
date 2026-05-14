@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "defaultGroupId": 1,
+    "description": "内置「企业内部制度」短文，与下方问句一一对应；每条单独入库以便金标恒为 chunk_index=0。"
+  },
+  "items": [
+    {
+      "id": "onboarding",
+      "fileName": "eval-corpus-onboarding.txt",
+      "content": "【入职材料】新员工须在入职首周完成：开通域账号与邮箱、签署劳动合同复印件并交人事存档、提交近三个月内体检合格报告、填写《员工信息登记表》并附身份证复印件。上述材料请发送至人事共享邮箱 hr-docs@company.example。",
+      "question": "新员工入职第一周要向人事交哪些材料？"
+    },
+    {
+      "id": "annual_leave",
+      "fileName": "eval-corpus-annual-leave.txt",
+      "content": "【年假规则】年假天数按累计社会工龄折算：已满1年不满10年的，年休假5天；已满10年不满20年的，年休假10天；已满20年的，年休假15天。国家法定休假日、休息日不计入年休假。",
+      "question": "工作满8年的员工每年有多少天年假？"
+    },
+    {
+      "id": "vpn",
+      "fileName": "eval-corpus-vpn.txt",
+      "content": "【VPN 排障】外网 VPN 无法连接时，请先确认本机系统时间已自动同步；其次卸载并重装 VPN 客户端，重新导入证书。若仍失败，请提交 IT 工单并附上错误截图、客户端版本号与操作系统版本。",
+      "question": "VPN 连不上时第一步应该排查什么？"
+    },
+    {
+      "id": "expense",
+      "fileName": "eval-corpus-expense.txt",
+      "content": "【差旅报销】员工报销差旅费须在 OA 提交申请单，并上传电子发票原件、交通行程单及事前审批截图。住宿标准超出职级上限的，须在申请中说明原因并经直属主管同意。",
+      "question": "差旅报销在系统里一般要上传哪些材料？"
+    },
+    {
+      "id": "meeting_room",
+      "fileName": "eval-corpus-meeting.txt",
+      "content": "【会议室】各部门使用会议室须提前在 OA「资源预订」中预约。若行程变更，须在会议开始前至少30分钟取消预订，以便他人使用。",
+      "question": "会议室不用了要提前多久在系统里取消？"
+    },
+    {
+      "id": "offboarding",
+      "fileName": "eval-corpus-offboarding.txt",
+      "content": "【离职交接】离职最后一个工作日，员工须归还工卡、笔记本电脑及其他领用资产至行政部门；IT 将在当日下班前完成账号冻结与设备数据擦除，请提前备份个人文件。",
+      "question": "离职当天工卡和电脑要怎么处理？"
+    }
+  ]
+}

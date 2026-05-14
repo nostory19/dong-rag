@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "datasetName": "example-template",
+    "groupId": 1,
+    "topK": 5,
+    "includeRerankComparison": false,
+    "notes": "手写金标见 README；或复制 datasets/example.json 问句后运行：python scripts/run_retrieval_eval.py seed-dataset"
+  },
+  "cases": [
+    {
+      "question": "请替换为与知识库一致的自然语言问题",
+      "goldDocumentId": null,
+      "goldChunkIndex": null
+    },
+    {
+      "question": "第二条示例问题",
+      "goldDocumentId": 100,
+      "goldChunkIndex": 0
+    }
+  ]
+}

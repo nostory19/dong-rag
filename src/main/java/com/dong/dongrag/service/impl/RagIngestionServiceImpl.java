@@ -44,6 +44,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -292,7 +293,7 @@ public class RagIngestionServiceImpl implements RagIngestionService {
         log.info("Pipeline step: es indexing, jobId={}, documentId={}, chunkCount={}", jobId, document.getId(), chunks.size());
         indexEs(document, chunks);
         log.info("Pipeline step: consistency verification, jobId={}, documentId={}", jobId, document.getId());
-        verifyConsistency(document, chunks.size());
+        verifyConsistency(document, chunks);
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -387,7 +388,8 @@ public class RagIngestionServiceImpl implements RagIngestionService {
         }
     }
 
-    private void verifyConsistency(KnowledgeDocument document, int expectedChunkSize) {
+    private void verifyConsistency(KnowledgeDocument document, List<DocumentChunk> chunks) {
+        int expectedChunkSize = chunks.size();
         long dbChunkCount = documentChunkMapper.selectCount(new QueryWrapper<DocumentChunk>()
                 .eq("document_id", document.getId()));
         long vectorIndexedCount = documentChunkMapper.selectCount(new QueryWrapper<DocumentChunk>()
@@ -399,13 +401,38 @@ public class RagIngestionServiceImpl implements RagIngestionService {
                     String.format("一致性校验失败, chunks=%d, vector=%d, es=%d, expected=%d",
                             dbChunkCount, vectorIndexedCount, esIndexedCount, expectedChunkSize));
         }
-        HybridRetrievalResultVO retrievalResult = hybridRetrievalService.retrieveWithJudgement(document.getGroupId(), document.getFileName(), 1);
+        String verifyQuery = buildIngestionVerificationQuery(document, chunks);
+        int topK = Math.min(10, Math.max(5, expectedChunkSize + 2));
+        HybridRetrievalResultVO retrievalResult = hybridRetrievalService.retrieveWithJudgement(
+                document.getGroupId(), verifyQuery, topK);
         boolean hasCurrentDocEvidence = retrievalResult.getEvidences().stream()
                 .map(ChunkEvidenceVO::getDocumentId)
                 .anyMatch(id -> Objects.equals(id, document.getId()));
         if (!hasCurrentDocEvidence) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "检索验收未通过，未召回当前文档");
         }
+    }
+
+    /**
+     * 仅用文件名检索时，正文多为自然语言且不含文件名，ES content match 与向量均难命中。
+     * 拼接「文件名 + 首块正文摘要」作为验收问句，与线上用户按内容检索一致。
+     */
+    private String buildIngestionVerificationQuery(KnowledgeDocument document, List<DocumentChunk> chunks) {
+        String fileName = StrUtil.blankToDefault(document.getFileName(), "");
+        DocumentChunk first = chunks.stream()
+                .min(Comparator.comparingInt(DocumentChunk::getChunkIndex))
+                .orElse(null);
+        if (first == null || StrUtil.isBlank(first.getChunkText())) {
+            return fileName;
+        }
+        String snippet = StrUtil.trim(first.getChunkText()).replaceAll("\\s+", " ");
+        if (snippet.length() > 360) {
+            snippet = snippet.substring(0, 360);
+        }
+        if (StrUtil.isBlank(fileName)) {
+            return snippet;
+        }
+        return fileName + " " + snippet;
     }
 
     private void markDocumentProcessing(Long documentId) {

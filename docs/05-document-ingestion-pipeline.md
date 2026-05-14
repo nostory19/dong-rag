@@ -31,7 +31,7 @@
 7. **向量索引**：`vectorStore.delete` 按 `documentId` 清理旧向量后 `add`；metadata 含 `groupId`、`documentId`、`chunkIndex`、`fileName`、`charStart/End`、`documentTitle`、`documentVersionEpoch`、`kbFingerprint` 等（便于引用与缓存失效）
 8. **ES 索引**：`rag_chunk_index`，与 chunk 一一对应
 9. **一致性校验**：DB chunk 数、已向量化数、ES 条数一致
-10. **检索验收**：对当前 `groupId` 用文件名等问题做一次 `retrieveWithJudgement`，要求能召回本文档
+10. **检索验收**：对当前 `groupId` 用「**文件名 + 首块正文摘要**」做一次 `retrieveWithJudgement`（`topK`≥5），结果中须出现本文档 id（避免仅用文件名时正文不含文件名导致 ES/向量均难命中）
 11. 成功：`documents` → `READY`，任务 → `SUCCESS`
 
 失败：写 `failure_reason` / `last_error`，按策略 `RETRY_WAITING` 或 `FAILED`。
@@ -55,6 +55,15 @@
 ## 5.6 向量批量写入
 
 `ingestion.vector.add-batch-size`：控制单次 `VectorStore.add` 的 batch，减轻 embedding 压力。
+
+## 实现思路与技术要点
+
+- **快速返回 + 异步执行**：上传接口只做「落 MinIO + 落库 + 投递任务」，避免阻塞 Tomcat 线程；`@Async` 或调度线程立即拉一次 `PENDING`，定时任务兜住进程重启或瞬时失败。
+- **状态机驱动**：`documents.status` 与 `ingestion_jobs.status` 分离，便于「同一文档多次重试/重建」与运营查询；失败写入 `failure_reason` 便于排障而非静默失败。
+- **解析策略**：纯文本直读降低依赖；二进制/Office 等走 Tika，统一入口减少格式分支爆炸。
+- **先删后写向量**：同一 `documentId` 重索引时清理旧向量与旧 ES 文档，避免检索到过期 chunk；metadata 携带 `documentVersionEpoch`、`kbFingerprint` 等支撑缓存失效与审计。
+- **一致性校验 + 检索验收**：数量对齐保证「写库成功但索引半成功」可被发现；用 `retrieveWithJudgement` 做一次真实检索验收，避免「索引有数据但不可搜」的假象（尤其文件名与正文不一致时）。
+- **代码入口**：主流程在 `RagIngestionServiceImpl`，任务与指标在 `IngestionJobService`；调参集中在 `application*.yml` 的 `ingestion.*` 与 `dongrag.ai.*`。
 
 上一篇：[04-group-and-data-isolation.md](04-group-and-data-isolation.md)  
 下一篇：[06-hybrid-retrieval-and-rag-qa.md](06-hybrid-retrieval-and-rag-qa.md)

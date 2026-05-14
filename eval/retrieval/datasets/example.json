@@ -1,0 +1,41 @@
+{
+  "meta": {
+    "datasetName": "dong-rag-eval-demo",
+    "groupId": 1,
+    "topK": 5,
+    "includeRerankComparison": false,
+    "notes": "由 seed-dataset 根据 seed_corpus.json 自动生成于 2026-05-14T07:59:18Z；每条短文单独入库，金标 chunk_index 固定为 0（单块）。"
+  },
+  "cases": [
+    {
+      "question": "新员工入职第一周要向人事交哪些材料？",
+      "goldDocumentId": 29,
+      "goldChunkIndex": 0
+    },
+    {
+      "question": "工作满8年的员工每年有多少天年假？",
+      "goldDocumentId": 30,
+      "goldChunkIndex": 0
+    },
+    {
+      "question": "VPN 连不上时第一步应该排查什么？",
+      "goldDocumentId": 31,
+      "goldChunkIndex": 0
+    },
+    {
+      "question": "差旅报销在系统里一般要上传哪些材料？",
+      "goldDocumentId": 32,
+      "goldChunkIndex": 0
+    },
+    {
+      "question": "会议室不用了要提前多久在系统里取消？",
+      "goldDocumentId": 33,
+      "goldChunkIndex": 0
+    },
+    {
+      "question": "离职当天工卡和电脑要怎么处理？",
+      "goldDocumentId": 34,
+      "goldChunkIndex": 0
+    }
+  ]
+}

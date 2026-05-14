@@ -2,10 +2,13 @@
 
 本目录按**讲解项目的逻辑**拆分主题：从总览到认证、数据隔离、入库、检索、助手、存储、观测、检测、库表、前端与排障。根目录 [README.md](../README.md) 提供**大纲导航**与快速上手；**具体设计与实现细节**以本目录为准。
 
+**工程约定与代码规范**见 [00-coding-standards.md](00-coding-standards.md)。各专题文档末尾附有 **「实现思路与技术要点」**，说明该模块在代码里如何落地、为何这样设计。
+
 ## 文档目录
 
 | 编号 | 文档 | 内容概要 |
 |------|------|----------|
+| 00 | [00-coding-standards.md](00-coding-standards.md) | 提交规范、后端/前端/脚本约定、配置与日志、临时文件与多租户安全 |
 | 01 | [01-project-overview.md](01-project-overview.md) | 项目定位、能力边界、与前端关系、概念链路 |
 | 02 | [02-tech-stack-and-structure.md](02-tech-stack-and-structure.md) | 技术栈、包结构、关键类索引 |
 | 03 | [03-authentication-and-authorization.md](03-authentication-and-authorization.md) | Sa-Token、登录/角色、与业务校验 |
@@ -21,4 +24,4 @@
 | 13 | [13-frontend-user-app.md](13-frontend-user-app.md) | 用户端 Vue 路由、助手流式与会话 |
 | 14 | [14-admin-frontend.md](14-admin-frontend.md) | 管理端功能与路由 |
 
-建议阅读顺序：**01 → 02 → 04 → 05 → 06 → 07 → 08**；运维与配置重点看 **10、12**；前端对接看 **13、14**。
+建议阅读顺序：**00（规范）→ 01 → 02 → 04 → 05 → 06 → 07 → 08**；运维与配置重点看 **10、12**；前端对接看 **13、14**。

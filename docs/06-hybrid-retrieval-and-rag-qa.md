@@ -49,5 +49,15 @@
 
 当模型 `ChatResponse` 返回 `Usage` 时，写入 `QaAnswerVO` 的 `promptTokens`、`completionTokens`、`totalTokens`。
 
+## 实现思路与技术要点
+
+- **双路召回 + RRF**：向量路补语义、ES 路补关键词；倒数排名融合（`k=60`）对各路分数尺度不敏感，比线性加权更稳健。
+- **可选 LLM 重排**：高价值场景下用模型对候选片段排序，代价是延迟与费用；通过 `dongrag.ai.retrieval-rerank-enabled` 与候选上限控制开关与成本；`applyRerank=false` 为检测脚本提供「基线对照」入口。
+- **邻接窗口扩展**：Top 命中块向前后扩展相邻 chunk，恢复被切分打断的段落上下文，衰减系数避免无限膨胀。
+- **证据门控**：用 RRF 最大分等启发式判断「是否值得调用生成模型」，证据不足时**直接拒答**，优先可预期行为而非「胡编」。
+- **熔断与指标**：检索与 LLM 分属 Resilience4j 实例，避免一路拖垮另一路；Micrometer 记录各阶段耗时便于定界（检索慢 vs 生成慢）。
+- **答案缓存**：Key 绑定 `GroupKnowledgeRevisionService.fingerprint(groupId)`，知识变更后自动失活；TTL 由 `qa-answer-cache-ttl-seconds` 控制。
+- **核心类**：`HybridRetrievalServiceImpl`、`RagQaServiceImpl`、`EvidenceRerankerImpl`（若启用）、`PromptResourceLoader`（外置 system prompt）。
+
 上一篇：[05-document-ingestion-pipeline.md](05-document-ingestion-pipeline.md)  
 下一篇：[07-knowledge-assistant-multi-agent.md](07-knowledge-assistant-multi-agent.md)

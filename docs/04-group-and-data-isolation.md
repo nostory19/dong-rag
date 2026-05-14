@@ -28,5 +28,13 @@
 
 详见 [06-hybrid-retrieval-and-rag-qa.md](06-hybrid-retrieval-and-rag-qa.md)、[09-storage-vectors-and-elasticsearch.md](09-storage-vectors-and-elasticsearch.md)。
 
+## 实现思路与技术要点
+
+- **纵深防御**：即使前端隐藏了其他组的入口，仍必须在服务端每条链路上带 `groupId` 并校验成员关系；向量与 ES 侧用 **filter/metadata** 固定组条件，避免仅靠应用层排序后「误泄漏」。
+- **校验顺序**：`AuthContextService.requireLoginUserId()` → `GroupService` 成员校验 → 业务逻辑；Controller 层注解无法表达「该 `groupId` 是否属于当前用户」，故第二步不可省略。
+- **向量路实现要点**：`HybridRetrievalServiceImpl` 在相似度召回后按 metadata 的 `groupId` 过滤，防止 Spring AI 返回跨组邻居（若底层未强约束）。
+- **ES 路实现要点**：`bool` 查询中 `groupId` 放在 **filter** 上下文，不参与算分，稳定且利于缓存。
+- **数据模型**：`Group`、`GroupMembership` 与文档/任务表外键或逻辑关联在 Service 层维护一致性（入组、退组策略按产品演进）。
+
 上一篇：[03-authentication-and-authorization.md](03-authentication-and-authorization.md)  
 下一篇：[05-document-ingestion-pipeline.md](05-document-ingestion-pipeline.md)

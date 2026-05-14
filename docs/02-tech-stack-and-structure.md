@@ -47,5 +47,13 @@
 | 检索检测 | `RetrievalDetectionServiceImpl` |
 | 编排评测 | `ComplaintEvaluationService` |
 
+## 实现思路与技术要点
+
+- **包结构的组织原则**：`controller` 薄、`service` 编排、`mapper/repository` 数据访问、`assistant`/`rag` 承载可演进领域逻辑，避免「全能 Controller」。
+- **为何引入 Spring AI 全家桶**：统一 Chat / Embedding / VectorStore 抽象，便于在 DashScope、Ollama 等实现间切换配置而少改业务代码。
+- **关键类索引的用途**：新人从「用例」反查实现类（如入库看 `RagIngestionServiceImpl`），减少在包间盲目搜索；新增能力时**同步更新**本表与根 README 速查。
+- **虚拟线程（助手侧）**：Planner/Worker 与 IO 密集调用并发时，用虚拟线程降低平台线程占用；与 Micrometer 计时配合可观察端到端延迟。
+- **与文档 00 的关系**：命名、体量、配置外置等工程约定见 [00-coding-standards.md](00-coding-standards.md)。
+
 上一篇：[01-project-overview.md](01-project-overview.md)  
 下一篇：[03-authentication-and-authorization.md](03-authentication-and-authorization.md)
