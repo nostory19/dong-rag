@@ -6,7 +6,8 @@
         <a-menu-item key="/dashboard" @click="go('/dashboard')">仪表盘</a-menu-item>
         <a-menu-item key="/users" @click="go('/users')">用户管理</a-menu-item>
         <a-menu-item key="/ingestion-jobs" @click="go('/ingestion-jobs')">入库任务</a-menu-item>
-        <a-menu-item key="/complaint-eval" @click="go('/complaint-eval')">投诉评测</a-menu-item>
+        <a-menu-item key="/complaint-eval" @click="go('/complaint-eval')">助手评测</a-menu-item>
+        <a-menu-item key="/retrieval-detect" @click="go('/retrieval-detect')">检索检测</a-menu-item>
         <a-menu-item key="/system-runtime" @click="go('/system-runtime')">系统运行</a-menu-item>
       </a-menu>
     </a-layout-sider>

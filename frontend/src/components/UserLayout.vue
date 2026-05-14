@@ -6,7 +6,7 @@
         <a-menu-item key="/groups" @click="go('/groups')">我的组</a-menu-item>
         <a-menu-item key="/documents" @click="go('/documents')">文档入库</a-menu-item>
         <a-menu-item key="/qa" @click="go('/qa')">知识问答</a-menu-item>
-        <a-menu-item key="/assistant" @click="go('/assistant')">智能助手</a-menu-item>
+        <a-menu-item key="/assistant" @click="go('/assistant')">知识助手</a-menu-item>
       </a-menu>
     </a-layout-sider>
     <a-layout>

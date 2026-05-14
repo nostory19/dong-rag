@@ -6,5 +6,7 @@ export type AssistantChatRequest = {
     groupId?: number;
     message?: string;
     topK?: number;
+    templateId?: string;
+    conversationId?: string;
 };
 

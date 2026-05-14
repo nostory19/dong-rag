@@ -15,5 +15,10 @@ public class WorkerResult implements Serializable {
 
     private boolean requiresEscalation;
 
+    /**
+     * Machine-readable reason when {@link #requiresEscalation} is true, e.g. WORKER_KEYWORD, AGENT_MISSING, WORKER_ERROR.
+     */
+    private String escalationReasonCode;
+
     private long costMs;
 }

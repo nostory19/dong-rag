@@ -18,5 +18,16 @@ public class QaAnswerVO implements Serializable {
 
     private List<ChunkEvidenceVO> evidences;
 
+    /**
+     * 是否来自 Redis 答案缓存。
+     */
+    private Boolean fromCache;
+
+    private Integer promptTokens;
+
+    private Integer completionTokens;
+
+    private Integer totalTokens;
+
     private static final long serialVersionUID = 1L;
 }

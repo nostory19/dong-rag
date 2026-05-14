@@ -2,11 +2,16 @@ package com.dong.dongrag.service.impl;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.dong.dongrag.config.DongragAiProperties;
 import com.dong.dongrag.mapper.DocumentChunkMapper;
 import com.dong.dongrag.model.entity.DocumentChunk;
 import com.dong.dongrag.model.vo.ChunkEvidenceVO;
 import com.dong.dongrag.model.vo.HybridRetrievalResultVO;
+import com.dong.dongrag.rag.EvidenceReranker;
 import com.dong.dongrag.service.HybridRetrievalService;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.Resource;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -35,8 +40,36 @@ public class HybridRetrievalServiceImpl implements HybridRetrievalService {
     @Resource
     private DocumentChunkMapper documentChunkMapper;
 
+    @Resource
+    private MeterRegistry meterRegistry;
+
+    @Resource
+    private DongragAiProperties dongragAiProperties;
+
+    @Resource
+    private CircuitBreakerRegistry circuitBreakerRegistry;
+
+    @Resource
+    private EvidenceReranker evidenceReranker;
+
     @Override
-    public List<ChunkEvidenceVO> hybridRetrieve(Long groupId, String question, int topK) {
+    public List<ChunkEvidenceVO> hybridRetrieve(Long groupId, String question, int topK, boolean applyRerank) {
+        Timer.Sample sample = Timer.start(meterRegistry);
+        try {
+            if (dongragAiProperties.isRetrievalCircuitBreakerEnabled()) {
+                return circuitBreakerRegistry.circuitBreaker("retrieval")
+                        .executeSupplier(() -> doHybridRetrieve(groupId, question, topK, applyRerank));
+            }
+            return doHybridRetrieve(groupId, question, topK, applyRerank);
+        } finally {
+            sample.stop(Timer.builder("dongrag.retrieval.hybrid")
+                    .description("Hybrid vector+ES retrieval")
+                    .tag("apply_rerank", String.valueOf(applyRerank))
+                    .register(meterRegistry));
+        }
+    }
+
+    private List<ChunkEvidenceVO> doHybridRetrieve(Long groupId, String question, int topK, boolean applyRerank) {
         int fetchSize = Math.max(topK * 3, 10);
         List<ChunkEvidenceVO> vectorResults = retrieveFromVector(groupId, question, fetchSize);
         List<ChunkEvidenceVO> esResults = retrieveFromEs(groupId, question, fetchSize);
@@ -56,7 +89,7 @@ public class HybridRetrievalServiceImpl implements HybridRetrievalService {
             merged.putIfAbsent(key, item);
             rrfScores.merge(key, 1.0 / (k + i + 1), Double::sum);
         }
-        List<ChunkEvidenceVO> ranked = merged.entrySet().stream()
+        List<ChunkEvidenceVO> mergedRanked = merged.entrySet().stream()
                 .map(entry -> {
                     ChunkEvidenceVO vo = entry.getValue();
                     vo.setScore(rrfScores.getOrDefault(entry.getKey(), 0D));
@@ -64,28 +97,43 @@ public class HybridRetrievalServiceImpl implements HybridRetrievalService {
                     return vo;
                 })
                 .sorted(Comparator.comparing(ChunkEvidenceVO::getScore).reversed())
-                .limit(topK)
                 .toList();
-        return withNeighborWindow(groupId, ranked, topK);
+
+        int preCap = Math.min(mergedRanked.size(), Math.max(Math.max(fetchSize, dongragAiProperties.getRerankCandidateLimit()), topK * 3));
+        List<ChunkEvidenceVO> pre = mergedRanked.stream().limit(preCap).toList();
+        List<ChunkEvidenceVO> cores;
+        if (applyRerank) {
+            cores = evidenceReranker.rerank(question, pre, topK);
+        } else {
+            cores = pre.stream().limit(topK).toList();
+        }
+        return withNeighborWindow(groupId, cores, topK);
     }
 
     @Override
     public HybridRetrievalResultVO retrieveWithJudgement(Long groupId, String question, int topK) {
-        List<ChunkEvidenceVO> evidences = hybridRetrieve(groupId, question, topK);
-        double confidence = evidences.stream()
-                .map(ChunkEvidenceVO::getScore)
-                .filter(java.util.Objects::nonNull)
-                .max(Double::compareTo)
-                .orElse(0D);
-        String confidenceLevel = confidence >= 0.03 ? "HIGH" : confidence >= 0.015 ? "MEDIUM" : "LOW";
-        boolean evidenceEnough = confidence >= 0.012 && !evidences.isEmpty();
+        Timer.Sample sample = Timer.start(meterRegistry);
+        try {
+            List<ChunkEvidenceVO> evidences = hybridRetrieve(groupId, question, topK, true);
+            double confidence = evidences.stream()
+                    .map(ChunkEvidenceVO::getScore)
+                    .filter(java.util.Objects::nonNull)
+                    .max(Double::compareTo)
+                    .orElse(0D);
+            String confidenceLevel = confidence >= 0.03 ? "HIGH" : confidence >= 0.015 ? "MEDIUM" : "LOW";
+            boolean evidenceEnough = confidence >= 0.012 && !evidences.isEmpty();
 
-        HybridRetrievalResultVO result = new HybridRetrievalResultVO();
-        result.setEvidences(evidences);
-        result.setConfidenceScore(confidence);
-        result.setConfidenceLevel(confidenceLevel);
-        result.setEvidenceEnough(evidenceEnough);
-        return result;
+            HybridRetrievalResultVO result = new HybridRetrievalResultVO();
+            result.setEvidences(evidences);
+            result.setConfidenceScore(confidence);
+            result.setConfidenceLevel(confidenceLevel);
+            result.setEvidenceEnough(evidenceEnough);
+            return result;
+        } finally {
+            sample.stop(Timer.builder("dongrag.retrieval.judgement")
+                    .description("Hybrid retrieval with judgement")
+                    .register(meterRegistry));
+        }
     }
 
     private List<ChunkEvidenceVO> retrieveFromVector(Long groupId, String question, int topK) {

@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/assistant',
         component: () => import('../pages/AssistantPage.vue'),
-        meta: { title: '智能助手', description: '投诉与业务场景智能客服对话' },
+        meta: { title: '知识助手', description: '基于当前组文档的多专家编排与流式汇总' },
       },
     ],
   },

@@ -10,17 +10,20 @@ import { request as __request } from '../core/request';
 export class AssistantControllerService {
     /**
      * @param groupId
+     * @param templateId
      * @returns BaseResponseMapStringObject OK
      * @throws ApiError
      */
     public static evaluateComplaint(
         groupId: number,
+        templateId?: string,
     ): CancelablePromise<BaseResponseMapStringObject> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/assistant/eval/complaint',
             query: {
                 'groupId': groupId,
+                'templateId': templateId,
             },
         });
     }

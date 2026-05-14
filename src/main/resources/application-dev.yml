@@ -53,6 +53,31 @@ spring:
     # 读取超时时间
     socket-timeout: 30s
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  # 远端 ES 与 elasticsearch-java 客户端版本不一致时，/actuator/health 解析 cluster health 会失败；集群暂不可升级时可先关闭
+  health:
+    elasticsearch:
+      enabled: false
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+    instances:
+      retrieval:
+        baseConfig: default
+      llm:
+        baseConfig: default
+
 # minio 配置
 storage:
   minio:
@@ -60,6 +85,22 @@ storage:
     access-key: admin
     secret-key: admin123456
     bucket-name: dong-rag-documents
+
+dongrag:
+  ai:
+    chat-temperature: 0.2
+    chat-max-tokens: 2048
+    retrieval-circuit-breaker-enabled: true
+    llm-circuit-breaker-enabled: true
+    retrieval-rerank-enabled: false
+    rerank-candidate-limit: 12
+    qa-answer-cache-ttl-seconds: 0
+  assistant:
+    # 意图：规则不足时是否再调一次 LLM 分类（会增加耗时与费用）
+    intent-llm-enabled: false
+    context-message-limit: 24
+    context-max-chars: 12000
+    compress-threshold-chars: 8000
 
 ingestion:
   chunking:

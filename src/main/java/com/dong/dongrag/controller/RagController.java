@@ -6,6 +6,8 @@ import com.dong.dongrag.common.BaseResponse;
 import com.dong.dongrag.common.ResultUtils;
 import com.dong.dongrag.model.dto.document.IngestTextRequest;
 import com.dong.dongrag.model.dto.qa.QaAskRequest;
+import com.dong.dongrag.model.dto.retrieval.RetrievalDetectRequest;
+import com.dong.dongrag.model.vo.RetrievalDetectResponseVO;
 import com.dong.dongrag.model.vo.IngestionJobVO;
 import com.dong.dongrag.model.vo.IngestionMetricsVO;
 import com.dong.dongrag.model.vo.QaAnswerVO;
@@ -13,6 +15,7 @@ import com.dong.dongrag.model.vo.IngestionTaskVO;
 import com.dong.dongrag.service.IngestionJobService;
 import com.dong.dongrag.service.RagIngestionService;
 import com.dong.dongrag.service.RagQaService;
+import com.dong.dongrag.service.RetrievalDetectionService;
 import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,6 +40,9 @@ public class RagController {
     @Resource
     private IngestionJobService ingestionJobService;
 
+    @Resource
+    private RetrievalDetectionService retrievalDetectionService;
+
     @PostMapping("/ingest/text")
     public BaseResponse<IngestionTaskVO> ingestText(@RequestBody IngestTextRequest request) {
         return ResultUtils.success(ragIngestionService.ingestPlainText(request));
@@ -56,6 +62,15 @@ public class RagController {
     @PostMapping("/qa/ask")
     public BaseResponse<QaAnswerVO> ask(@RequestBody QaAskRequest request) {
         return ResultUtils.success(ragQaService.ask(request));
+    }
+
+    /**
+     * 管理端：批量检索检测（混合检索 + 可选金标 Hit@k / MRR）。
+     */
+    @PostMapping("/detect/retrieval")
+    @SaCheckRole("admin")
+    public BaseResponse<RetrievalDetectResponseVO> detectRetrieval(@RequestBody RetrievalDetectRequest request) {
+        return ResultUtils.success(retrievalDetectionService.detect(request));
     }
 
     @GetMapping("/ingest/jobs")

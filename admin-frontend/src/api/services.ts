@@ -21,8 +21,12 @@ export const userApi = {
 };
 
 export const assistantApi = {
-  evalComplaint(groupId: number) {
-    return request<any>({ method: 'POST', url: '/assistant/eval/complaint', params: { groupId } });
+  evalComplaint(groupId: number, templateId?: string) {
+    return request<any>({
+      method: 'POST',
+      url: '/assistant/eval/complaint',
+      params: templateId ? { groupId, templateId } : { groupId },
+    });
   },
 };
 
@@ -48,6 +52,42 @@ export type IngestionMetricsVO = {
   avgDurationSeconds: number;
   successRateByFileType?: Record<string, number>;
   retryCountDistribution?: Record<string, number>;
+};
+
+export type RetrievalDetectCase = {
+  question: string;
+  goldDocumentId?: number;
+  goldChunkIndex?: number;
+};
+
+export type RetrievalDetectRequest = {
+  groupId: number;
+  topK?: number;
+  cases: RetrievalDetectCase[];
+  includeRerankComparison?: boolean;
+};
+
+export type RetrievalDetectResponse = {
+  caseCount: number;
+  labeledCount: number;
+  meanHitAt1: number | null;
+  meanHitAtK: number | null;
+  mrr: number | null;
+  meanHitAt1Baseline?: number | null;
+  meanHitAtKBaseline?: number | null;
+  mrrBaseline?: number | null;
+  details: any[];
+};
+
+export const ragDetectApi = {
+  detectRetrieval(body: RetrievalDetectRequest) {
+    return request<RetrievalDetectResponse>({
+      method: 'POST',
+      url: '/rag/detect/retrieval',
+      data: body,
+      timeout: 120000,
+    });
+  },
 };
 
 export const ragIngestionApi = {

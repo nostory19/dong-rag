@@ -16,6 +16,7 @@ import com.dong.dongrag.model.vo.HybridRetrievalResultVO;
 import com.dong.dongrag.model.vo.IngestionTaskVO;
 import com.dong.dongrag.repository.RagChunkIndexRepository;
 import com.dong.dongrag.service.AuthContextService;
+import com.dong.dongrag.service.GroupKnowledgeRevisionService;
 import com.dong.dongrag.service.GroupService;
 import com.dong.dongrag.service.HybridRetrievalService;
 import com.dong.dongrag.service.IngestionJobService;
@@ -41,6 +42,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -82,6 +84,9 @@ public class RagIngestionServiceImpl implements RagIngestionService {
 
     @Resource
     private HybridRetrievalService hybridRetrievalService;
+
+    @Resource
+    private GroupKnowledgeRevisionService groupKnowledgeRevisionService;
 
     @Resource
     private MinioStorageService minioStorageService;
@@ -351,6 +356,12 @@ public class RagIngestionServiceImpl implements RagIngestionService {
             metadata.put("sourceType", document.getFileExt());
             metadata.put("language", "zh");
             metadata.put("hash", chunk.getChunkHash());
+            metadata.put("documentTitle", document.getFileName());
+            long verEpoch = document.getUpdatedAt() != null
+                    ? document.getUpdatedAt().toEpochSecond(ZoneOffset.UTC)
+                    : (document.getProcessedAt() != null ? document.getProcessedAt().toEpochSecond(ZoneOffset.UTC) : 0L);
+            metadata.put("documentVersionEpoch", verEpoch);
+            metadata.put("kbFingerprint", groupKnowledgeRevisionService.fingerprint(document.getGroupId()));
             vectorStore.add(List.of(new Document(chunk.getChunkText(), metadata)));
             chunk.setVectorIndexed(true);
             documentChunkMapper.updateById(chunk);
@@ -448,6 +459,12 @@ public class RagIngestionServiceImpl implements RagIngestionService {
         metadata.put("hash", sha256(chunkPart.text()));
         metadata.put("sectionTitle", "section-" + chunkIndex);
         metadata.put("pageNo", Math.max(1, chunkIndex / 3 + 1));
+        metadata.put("documentTitle", document.getFileName());
+        long verEpoch = document.getUpdatedAt() != null
+                ? document.getUpdatedAt().toEpochSecond(ZoneOffset.UTC)
+                : (document.getProcessedAt() != null ? document.getProcessedAt().toEpochSecond(ZoneOffset.UTC) : 0L);
+        metadata.put("documentVersionEpoch", verEpoch);
+        metadata.put("kbFingerprint", groupKnowledgeRevisionService.fingerprint(document.getGroupId()));
         return metadata;
     }
 

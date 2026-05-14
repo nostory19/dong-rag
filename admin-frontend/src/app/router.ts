@@ -13,6 +13,7 @@ const routes = [
       { path: '/users', component: () => import('../pages/UserManagePage.vue') },
       { path: '/ingestion-jobs', component: () => import('../pages/IngestionJobsPage.vue') },
       { path: '/complaint-eval', component: () => import('../pages/ComplaintEvalPage.vue') },
+      { path: '/retrieval-detect', component: () => import('../pages/RetrievalDetectPage.vue') },
       { path: '/system-runtime', component: () => import('../pages/SystemRuntimePage.vue') },
     ],
   },

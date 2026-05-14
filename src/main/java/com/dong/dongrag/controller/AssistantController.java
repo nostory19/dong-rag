@@ -36,7 +36,12 @@ public class AssistantController {
 
     @PostMapping("/eval/complaint")
     @SaCheckRole("admin")
-    public BaseResponse<Map<String, Object>> evaluateComplaint(@RequestParam("groupId") Long groupId) {
-        return ResultUtils.success(complaintEvaluationService.quickEvaluate(groupId));
+    public BaseResponse<Map<String, Object>> evaluateComplaint(
+            @RequestParam("groupId") Long groupId,
+            @RequestParam(value = "templateId", required = false) String templateId) {
+        if (templateId == null || templateId.isBlank()) {
+            return ResultUtils.success(complaintEvaluationService.quickEvaluate(groupId));
+        }
+        return ResultUtils.success(complaintEvaluationService.quickEvaluate(groupId, templateId.trim()));
     }
 }

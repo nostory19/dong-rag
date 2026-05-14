@@ -10,6 +10,12 @@ public class TaskPlan implements Serializable {
 
     private String originalRequest;
 
+    /** Optional planner hint (audit / routing only). */
+    private String intent;
+
+    /** Optional planner hint; final escalation still decided by policy layer. */
+    private Boolean requiresHuman;
+
     private List<SubTask> subTasks;
 
     @Data
